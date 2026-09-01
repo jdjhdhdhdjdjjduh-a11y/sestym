@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إنذارات <%= guild.name %></title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <a href="/dashboard" class="back-link">→ رجوع لقائمة السيرفرات</a>
+
+    <div class="page-header">
+      <h1>⚠️ إنذارات <%= guild.name %></h1>
+    </div>
+
+    <nav class="page-nav">
+      <a href="/dashboard/<%= guild.id %>">⚙️ الإعدادات</a>
+      <a href="/dashboard/<%= guild.id %>/stats">📊 الإحصائيات</a>
+      <a href="/dashboard/<%= guild.id %>/warnings" class="active">⚠️ الإنذارات</a>
+    </nav>
+
+
+
+    <% if (members.length === 0) { %>
+      <div class="empty-state">🎉 ما فيه أي عضو عنده إنذارات حالياً — السيرفر نظيف!</div>
+    <% } else { %>
+      <% members.forEach(m => { %>
+        <div class="warning-card">
+          <div class="warning-card-head">
+            <% if (m.avatar) { %>
+              <img src="https://cdn.discordapp.com/avatars/<%= m.userId %>/<%= m.avatar %>.png" alt="">
+            <% } else { %>
+              <div class="warning-avatar-placeholder"><%= m.username[0].toUpperCase() %></div>
+            <% } %>
+            <div style="flex:1">
+              <div class="name"><%= m.username %></div>
+              <div class="count"><%= m.warnings.length %> إنذار</div>
+            </div>
+            <form method="POST" action="/dashboard/<%= guild.id %>/warnings/clear-all" onsubmit="return confirm('متأكد تبي تمسح كل إنذارات هذا العضو؟');">
+              <input type="hidden" name="userId" value="<%= m.userId %>">
+              <button type="submit" class="clear-all-btn">مسح الكل</button>
+            </form>
+          </div>
+
+          <% m.warnings.forEach((w, i) => { %>
+            <div class="warning-item">
+              <div>
+                <div class="reason"><%= w.reason %></div>
+                <div class="date"><%= new Date(w.date).toLocaleString('ar-EG') %></div>
+              </div>
+              <form method="POST" action="/dashboard/<%= guild.id %>/warnings/clear-one">
+                <input type="hidden" name="userId" value="<%= m.userId %>">
+                <input type="hidden" name="index" value="<%= i %>">
+                <button type="submit" class="btn-danger-sm">حذف</button>
+              </form>
+            </div>
+          <% }) %>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+  <script src="/toast.js"></script>
+</body>
+</html>

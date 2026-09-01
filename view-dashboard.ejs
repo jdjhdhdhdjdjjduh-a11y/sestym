@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>سيرفراتك</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="hello-strip">أهلاً <b><%= user.username %></b> 👋</div>
+    <div class="bot-status">
+      <span class="bot-status-dot <%= botOnline ? '' : 'offline' %>"></span>
+      البوت <%= botOnline ? 'شغال الحين' : 'مو متصل حالياً' %>
+    </div>
+    <div class="page-header">
+      <h1>🗂️ اختر سيرفرك</h1>
+    </div>
+
+    <% if (guilds.length === 0) { %>
+      <div class="empty-state">
+        ما عندك أي سيرفر تقدر تديره حالياً.<br>
+        لازم تكون أونر أو عندك صلاحية "Manage Server" بالسيرفر.
+      </div>
+    <% } else { %>
+      <div class="guild-grid">
+        <% guilds.forEach((g, i) => { %>
+          <a class="guild-card" style="--i:<%= i %>" href="/dashboard/<%= g.id %>">
+            <% if (g.icon) { %>
+              <img src="https://cdn.discordapp.com/icons/<%= g.id %>/<%= g.icon %>.png" alt="">
+            <% } else { %>
+              <div class="guild-icon-placeholder"><%= g.name[0] %></div>
+            <% } %>
+            <span><%= g.name %></span>
+          </a>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>

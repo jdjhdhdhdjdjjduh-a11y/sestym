@@ -1,0 +1,30 @@
+{
+  "name": "community-discord-bot",
+  "version": "1.0.0",
+  "description": "بوت وموقع إدارة سيرفر ديسكورد - خدمة واحدة",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "mongodb": "^6.9.0",
+    "dotenv": "^16.4.5",
+    "@napi-rs/canvas": "^0.1.44",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "connect-mongo": "^5.1.0",
+    "passport": "^0.7.0",
+    "passport-discord": "^0.1.4",
+    "ejs": "^3.1.9",
+    "@discordjs/voice": "^0.17.0",
+    "libsodium-wrappers": "^0.7.15",
+    "gifenc": "^1.0.3",
+    "whois": "^2.14.0",
+    "tesseract.js": "^5.1.1",
+    "lavalink-client": "^2.1.3"
+  }
+}

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>دليل الأوامر</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">→ رجوع للرئيسية</a>
+
+    <div class="page-header">
+      <h1>📖 دليل أوامر البوت</h1>
+    </div>
+    <p style="color:var(--text-muted);font-size:14.5px;margin-bottom:24px;">
+      كل أوامر الإدارة تُكتب مباشرة بالرسالة بدون سلاش (عدا الموضحة بقسم "أوامر السلاش" بالأسفل). كل أمر يحتاج صلاحية ديسكورد معينة موضحة جنبه.
+    </p>
+
+    <% categories.forEach(cat => { %>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-icon"><%= cat.title.split(' ')[0] %></div>
+          <div>
+            <h2><%= cat.title.replace(/^\S+\s/, '') %></h2>
+          </div>
+        </div>
+
+        <% if (cat.commands.length === 0) { %>
+          <p style="color:var(--text-muted);font-size:14px;"><%= cat.note %></p>
+        <% } else { %>
+          <% cat.commands.forEach(([cmd, desc]) => { %>
+            <div class="warning-item" style="cursor:default;">
+              <div>
+                <div class="reason mono" style="color:var(--accent-glow);"><%= cmd %></div>
+                <div class="date" style="font-family:inherit;color:var(--text-muted);margin-top:3px;"><%= desc %></div>
+              </div>
+            </div>
+          <% }) %>
+        <% } %>
+      </div>
+    <% }) %>
+
+    <div class="card card--suggestions">
+      <div class="card-head">
+        <div class="card-icon">⚡</div>
+        <div><h2>أوامر السلاش</h2></div>
+      </div>
+      <% slashCommands.forEach(([cmd, desc]) => { %>
+        <div class="warning-item" style="cursor:default;">
+          <div>
+            <div class="reason mono" style="color:var(--accent-blue);"><%= cmd %></div>
+            <div class="date" style="font-family:inherit;color:var(--text-muted);margin-top:3px;"><%= desc %></div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+</body>
+</html>

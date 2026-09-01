@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة تحكم البوت</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-page">
+  <div class="login-bg-orb orb1"></div>
+  <div class="login-bg-orb orb2"></div>
+
+  <div class="center-box">
+    <span class="eyebrow">CONTROL DECK</span>
+    <h1>🤖 لوحة تحكم بوت السيرفر</h1>
+    <p>سجل دخولك بحساب ديسكورد عشان تدير كل إعدادات سيرفرك من مكان واحد</p>
+
+    <% if (user) { %>
+      <a class="btn" href="/dashboard">🚀 اذهب للوحة التحكم</a>
+    <% } else { %>
+      <a class="btn" href="/auth/discord">🔐 تسجيل الدخول بديسكورد</a>
+    <% } %>
+
+    <p style="margin-top:24px;font-size:13px;"><a href="/commands" style="color:var(--text-muted);">📖 تصفح دليل الأوامر بدون تسجيل دخول</a></p>
+  </div>
+</body>
+</html>

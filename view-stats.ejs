@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إحصائيات <%= guild.name %></title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <a href="/dashboard" class="back-link">→ رجوع لقائمة السيرفرات</a>
+
+    <div class="page-header">
+      <h1>📊 إحصائيات <%= guild.name %></h1>
+    </div>
+
+    <nav class="page-nav">
+      <a href="/dashboard/<%= guild.id %>">⚙️ الإعدادات</a>
+      <a href="/dashboard/<%= guild.id %>/stats" class="active">📊 الإحصائيات</a>
+      <a href="/dashboard/<%= guild.id %>/warnings">⚠️ الإنذارات</a>
+    </nav>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value"><%= guildInfo?.approximate_member_count ?? '—' %></div>
+        <div class="stat-label">إجمالي أعضاء السيرفر</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-value"><%= guildInfo?.approximate_presence_count ?? '—' %></div>
+        <div class="stat-label">متصلين الآن</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💬</div>
+        <div class="stat-value"><%= Number(aggregate.total_messages).toLocaleString('en-US') %></div>
+        <div class="stat-label">رسائل مُسجّلة (نظام المستويات)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div class="stat-value"><%= aggregate.top_level %></div>
+        <div class="stat-label">أعلى مستوى وصله عضو</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-value"><%= aggregate.total_warnings %></div>
+        <div class="stat-label">إجمالي الإنذارات المسجّلة</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💡</div>
+        <div class="stat-value"><%= suggestionStats.total %></div>
+        <div class="stat-label">اقتراحات قُدّمت</div>
+      </div>
+    </div>
+
+    <div class="card card--suggestions">
+      <div class="card-head">
+        <div class="card-icon">📈</div>
+        <div>
+          <h2>نشاط آخر 14 يوم</h2>
+          <div class="card-sub">عدد الرسائل والأعضاء الجدد يوميًا</div>
+        </div>
+      </div>
+      <% if (dailyActivity.length === 0) { %>
+        <p style="color:var(--text-muted);font-size:14px;">ما فيه بيانات نشاط مسجلة لين الحين — لازم يكون نظام المستويات مفعّل من صفحة الإعدادات.</p>
+      <% } else { %>
+        <canvas id="activityChart" height="90"></canvas>
+      <% } %>
+    </div>
+
+    <div class="card card--leveling">
+      <div class="card-head">
+        <div class="card-icon">🏆</div>
+        <div>
+          <h2>المتصدرين</h2>
+          <div class="card-sub">أعلى 10 أعضاء نشاطًا حسب XP</div>
+        </div>
+      </div>
+
+      <% if (topMembers.length === 0) { %>
+        <p style="color:var(--text-muted);font-size:14px;">ما فيه بيانات نشاط مسجلة لين الحين — لازم يكون نظام المستويات مفعّل من صفحة الإعدادات.</p>
+      <% } else { %>
+        <% topMembers.forEach((m, i) => { %>
+          <div class="leaderboard-row">
+            <div class="leaderboard-rank"><%= i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) %></div>
+            <div class="leaderboard-info">
+              <div class="name mono">#<%= m.userId %></div>
+              <div class="sub">المستوى <%= m.level %> • <%= m.messageCount.toLocaleString('en-US') %> رسالة</div>
+            </div>
+            <div class="mono" style="color:var(--accent-glow);font-weight:700;font-size:13px;"><%= m.xp.toLocaleString('en-US') %> XP</div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+  </div>
+
+  <% if (dailyActivity.length > 0) { %>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    const labels = <%- JSON.stringify(dailyActivity.map(d => new Date(d.day).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }))) %>;
+    const messages = <%- JSON.stringify(dailyActivity.map(d => d.message_count)) %>;
+    const newMembers = <%- JSON.stringify(dailyActivity.map(d => d.new_members)) %>;
+
+    new Chart(document.getElementById('activityChart'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'رسائل', data: messages, borderColor: '#7c5cff', backgroundColor: '#7c5cff33', tension: 0.35, fill: true },
+          { label: 'أعضاء جدد', data: newMembers, borderColor: '#00e5a0', backgroundColor: '#00e5a033', tension: 0.35, fill: true }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#edeef7' } } },
+        scales: {
+          x: { ticks: { color: '#8b8fa8' }, grid: { color: '#232840' } },
+          y: { ticks: { color: '#8b8fa8' }, grid: { color: '#232840' }, beginAtZero: true }
+        }
+      }
+    });
+  </script>
+  <% } %>
+</body>
+</html>
