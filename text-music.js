@@ -72,7 +72,8 @@ module.exports = {
         } else {
           // بحث بالاسم: نجرب أكثر من مصدر بالتسلسل لين نلقى نتيجة
           // (يبدأ بساوند كلاود لأنه أكثر استقرارًا، وبعدين يوتيوب، وبعدين سبوتيفاي)
-          const platforms = ['scsearch', 'ytsearch', 'spsearch'];
+          // دييزر أولاً لأن جودته الصوتية أعلى (320kbps) من يوتيوب وساوند كلاود عادةً
+          const platforms = ['dzsearch', 'scsearch', 'ytsearch', 'spsearch'];
           for (const platform of platforms) {
             try {
               const attempt = await player.search({ query, source: platform }, message.author);
@@ -384,7 +385,7 @@ module.exports = {
     }
   },
 
-  'الاغنيه': {
+  'الأغنية_الحالية': {
     permission: PermissionFlagsBits.SendMessages,
     label: 'عرض الموسيقى',
     deleteInvoke: false,
