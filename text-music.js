@@ -63,9 +63,32 @@ module.exports = {
         }
         if (!player.connected) await player.connect();
 
-        const res = await player.search({ query }, message.author);
+        const isDirectUrl = /^https?:\/\//i.test(query);
+        let res = null;
+
+        if (isDirectUrl) {
+          // رابط مباشر (يوتيوب/سبوتيفاي/ساوند كلاود/ديزر) - ما نحتاج نجرب مصادر متعددة
+          res = await player.search({ query }, message.author);
+        } else {
+          // بحث بالاسم: نجرب أكثر من مصدر بالتسلسل لين نلقى نتيجة
+          // (يبدأ بساوند كلاود لأنه أكثر استقرارًا، وبعدين يوتيوب، وبعدين سبوتيفاي)
+          const platforms = ['scsearch', 'ytsearch', 'spsearch'];
+          for (const platform of platforms) {
+            try {
+              const attempt = await player.search({ query, source: platform }, message.author);
+              if (attempt?.tracks?.length) {
+                res = attempt;
+                break;
+              }
+            } catch (searchErr) {
+              console.error(`⚠️ فشل البحث عبر ${platform}:`, searchErr?.message || searchErr);
+              // نكمل للمصدر التالي بدل ما نوقف كامل الأمر
+            }
+          }
+        }
+
         if (!res || !res.tracks?.length) {
-          return message.reply({ embeds: [errorEmbed('ما لقيت شي', `ما لقيت أي نتيجة عن "${query}"`)] });
+          return message.reply({ embeds: [errorEmbed('ما لقيت شي', `ما لقيت أي نتيجة عن "${query}" من أي مصدر (ساوند كلاود / يوتيوب / سبوتيفاي).`)] });
         }
 
         if (res.loadType === 'playlist') {
@@ -361,7 +384,7 @@ module.exports = {
     }
   },
 
-  'الأغنية_الحالية': {
+  'الاغنيه': {
     permission: PermissionFlagsBits.SendMessages,
     label: 'عرض الموسيقى',
     deleteInvoke: false,
