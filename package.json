@@ -23,8 +23,8 @@
     "@discordjs/voice": "^0.17.0",
     "libsodium-wrappers": "^0.7.15",
     "gifenc": "^1.0.3",
-    "whois": "2.13.0"
+    "whois": "2.13.0",
     "tesseract.js": "^5.1.1",
     "lavalink-client": "^2.1.3"
   }
-}
+} 
