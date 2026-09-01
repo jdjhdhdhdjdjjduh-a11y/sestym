@@ -10,13 +10,59 @@ function initMusic(discordClient) {
 
   client.lavalink = new LavalinkManager({
     nodes: [
+      // ---- مجموعة Serenetia (عام، مجاني، من أكثرها استقرارًا) ----
       {
-        id: 'main-node',
-        host: process.env.LAVALINK_HOST,
-        port: Number(process.env.LAVALINK_PORT || 2333),
-        authorization: process.env.LAVALINK_PASSWORD,
-        secure: process.env.LAVALINK_SECURE === 'true'
+        id: 'serenetia-v4',
+        host: 'lavalinkv4.serenetia.com',
+        port: 443,
+        authorization: 'https://dsc.gg/ajidevserver',
+        secure: true
+      },
+      {
+        id: 'serenetia-v3',
+        host: 'lavalinkv3.serenetia.com',
+        port: 443,
+        authorization: 'https://dsc.gg/ajidevserver',
+        secure: true
+      },
+      {
+        id: 'serenetia-main',
+        host: 'lavalink.serenetia.com',
+        port: 443,
+        authorization: 'https://dsc.gg/ajidevserver',
+        secure: true
+      },
+      // ---- مجموعة HeavenCloud (عام، مجاني، فيه أكثر من منطقة) ----
+      {
+        id: 'heavencloud-india',
+        host: 'lavalink.heavencloud.in',
+        port: 443,
+        authorization: 'heavencloud',
+        secure: true
+      },
+      {
+        id: 'heavencloud-usa',
+        host: 'us.lavalink.heavencloud.in',
+        port: 443,
+        authorization: 'heavencloud',
+        secure: true
+      },
+      {
+        id: 'heavencloud-singapore',
+        host: 'sg.lavalink.heavencloud.in',
+        port: 443,
+        authorization: 'heavencloud',
+        secure: true
+      },
+      {
+        id: 'heavencloud-europe',
+        host: 'eu.lavalink.heavencloud.in',
+        port: 443,
+        authorization: 'heavencloud',
+        secure: true
       }
+      // ملاحظة: لو رجعت تستضيف Lavalink خاص فيك مستقبلاً بمكان يدعم UDP كامل،
+      // ضيفه بالأعلى بالقائمة (أول عنصر) عشان يكون الأساس وذولا يصيرون احتياط بس.
     ],
     // الوظيفة اللي ترسل بيانات الاتصال الصوتي لديسكورد عبر الـ Shard الصحيح
     sendToShard: (guildId, payload) => client.guilds.cache.get(guildId)?.shard?.send(payload),
@@ -63,7 +109,7 @@ function initMusic(discordClient) {
     })
     .on('queueEnd', player => {
       const channel = client.channels.cache.get(player.textChannelId);
-      channel?.send({ embeds: [infoEmbed('خلص الطابور 🎶', 'ما بقيت أغاني، اكتب `تشغيل` عشان تضيف أكثر.')] }).catch(() => {});
+      channel?.send({ embeds: [infoEmbed('خلص الطابور 🎶', 'ما بقيت أغاني، اكتب `تشغيل` علمود تضيف أكثر.')] }).catch(() => {});
     })
     .on('playerDisconnect', player => {
       const channel = client.channels.cache.get(player.textChannelId);
@@ -87,3 +133,4 @@ function getLavalink() {
 }
 
 module.exports = { initMusic, connectMusic, getLavalink };
+ 
