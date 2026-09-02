@@ -33,9 +33,87 @@ module.exports = {
     // ------- أزرار التحكم بالموسيقى -------
     if (interaction.isButton() && interaction.customId.startsWith('music_')) {
       await handleMusicButton(interaction);
+      return;
+    }
+
+    // ------- زر "مشاهدة سوا" (بأمر فيلم / مسلسل) -------
+    if (interaction.isButton() && interaction.customId === 'cinema_watch_together') {
+      await handleWatchTogetherButton(interaction);
+      return;
+    }
+
+    // ------- زر "الحلقات" (بأمر مسلسل) -------
+    if (interaction.isButton() && interaction.customId.startsWith('cinema_episodes_')) {
+      await handleEpisodesButton(interaction);
+      return;
+    }
+
+    // ------- قائمة اختيار الموسم -------
+    if (interaction.isStringSelectMenu() && interaction.customId.startsWith('cinema_season_select_')) {
+      await handleSeasonSelect(interaction);
+      return;
     }
   }
 };
+
+const WATCH_TOGETHER_APP_ID = '880218394199220334';
+
+async function handleWatchTogetherButton(interaction) {
+  const { errorEmbed, successEmbed } = require('./embed-helper');
+  const voiceChannel = interaction.member?.voice?.channel;
+  if (!voiceChannel) {
+    return interaction.reply({ embeds: [errorEmbed('غير ممكن', 'لازم تكون بروم صوتي أول عشان تفعّل مشاهدة سوا.')], ephemeral: true });
+  }
+  try {
+    const { InviteTargetType } = require('discord.js');
+    const invite = await voiceChannel.createInvite({
+      targetType: InviteTargetType.EmbeddedApplication,
+      targetApplication: WATCH_TOGETHER_APP_ID,
+      maxAge: 86_400
+    });
+    await interaction.reply({ embeds: [successEmbed('جاهزين للمشاهدة سوا 🎬', `اضغطوا الرابط وابدأوا: ${invite.url}`)] });
+  } catch (err) {
+    console.error('❌ خطأ بزر مشاهدة سوا:', err?.message || err);
+    await interaction.reply({ embeds: [errorEmbed('تعذر التفعيل', 'تأكد إن البوت عنده صلاحية "إنشاء دعوة" بهذا الروم الصوتي.')], ephemeral: true });
+  }
+}
+
+async function handleEpisodesButton(interaction) {
+  const { errorEmbed } = require('./embed-helper');
+  const { buildSeasonSelectRow } = require('./text-cinema');
+  const tvId = interaction.customId.replace('cinema_episodes_', '');
+
+  try {
+    const { isConfigured, searchTitle } = require('./movie-api');
+    // نجيب عدد المواسم عن طريق التفاصيل مباشرة (بدون بحث ثاني) باستخدام fetch مباشر
+    const details = await fetch(`https://api.themoviedb.org/3/tv/${tvId}?api_key=${process.env.TMDB_API_KEY}&language=ar`).then(r => r.json());
+    const seasonCount = details?.number_of_seasons || 1;
+
+    await interaction.reply({
+      content: 'اختر الموسم اللي تبي تشوف حلقاته 👇',
+      components: [buildSeasonSelectRow(tvId, seasonCount)],
+      ephemeral: true
+    });
+  } catch (err) {
+    console.error('❌ خطأ بزر الحلقات:', err?.message || err);
+    await interaction.reply({ embeds: [errorEmbed('صار خطأ', 'تعذر جلب مواسم هذا المسلسل حالياً.')], ephemeral: true });
+  }
+}
+
+async function handleSeasonSelect(interaction) {
+  const { errorEmbed } = require('./embed-helper');
+  const { buildEpisodesEmbed, getSeasonEpisodes } = require('./text-cinema');
+  const tvId = interaction.customId.replace('cinema_season_select_', '');
+  const seasonNumber = interaction.values[0];
+
+  try {
+    const seasonData = await getSeasonEpisodes(tvId, seasonNumber);
+    await interaction.update({ content: null, embeds: [buildEpisodesEmbed(seasonData, seasonNumber)], components: interaction.message.components });
+  } catch (err) {
+    console.error('❌ خطأ بجلب حلقات الموسم:', err?.message || err);
+    await interaction.reply({ embeds: [errorEmbed('صار خطأ', 'تعذر جلب حلقات هذا الموسم حالياً.')], ephemeral: true });
+  }
+}
 
 async function handleMusicButton(interaction) {
   const { buildNowPlayingEmbed, buildControlRows } = require('./music-embed');
