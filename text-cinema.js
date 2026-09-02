@@ -1,9 +1,10 @@
 const {
   PermissionFlagsBits, EmbedBuilder, ChannelType, InviteTargetType,
-  GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel
+  GuildScheduledEventEntityType, GuildScheduledEventPrivacyLevel,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder
 } = require('discord.js');
 const { errorEmbed, successEmbed, COLORS } = require('./embed-helper');
-const { isConfigured, searchTitle } = require('./movie-api');
+const { isConfigured, searchTitle, getSeasonEpisodes } = require('./movie-api');
 
 // نشاطية "نشاهد سوا" الرسمية بديسكورد (YouTube Together) - آيدي عام موثق
 const WATCH_TOGETHER_APP_ID = '880218394199220334';
@@ -25,6 +26,54 @@ function buildTitleEmbed(item, emoji) {
   if (item.genres) embed.addFields({ name: '🎭 التصنيف', value: item.genres });
 
   return embed;
+}
+
+function buildWatchButtonRow() {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('cinema_watch_together')
+      .setLabel('مشاهدة سوا')
+      .setEmoji('🎬')
+      .setStyle(ButtonStyle.Primary)
+  );
+}
+
+function buildSeriesButtonsRow(tvId) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('cinema_watch_together')
+      .setLabel('مشاهدة سوا')
+      .setEmoji('🎬')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(`cinema_episodes_${tvId}`)
+      .setLabel('الحلقات')
+      .setEmoji('📺')
+      .setStyle(ButtonStyle.Secondary)
+  );
+}
+
+function buildSeasonSelectRow(tvId, seasonCount) {
+  const options = Array.from({ length: Math.min(seasonCount, 25) }, (_, i) => ({
+    label: `الموسم ${i + 1}`,
+    value: String(i + 1)
+  }));
+  return new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`cinema_season_select_${tvId}`)
+      .setPlaceholder('اختر الموسم')
+      .addOptions(options)
+  );
+}
+
+function buildEpisodesEmbed(seasonData, seasonNumber) {
+  const lines = seasonData.episodes.map(ep =>
+    `**${ep.number}.** ${ep.name}${ep.airDate ? ` — 📅 ${ep.airDate}` : ''}`
+  );
+  return new EmbedBuilder()
+    .setColor(COLORS.info)
+    .setTitle(`📺 ${seasonData.seasonName || `الموسم ${seasonNumber}`}`)
+    .setDescription(lines.length ? lines.join('\n').slice(0, 4000) : 'ما فيه حلقات متوفرة لهذا الموسم.');
 }
 
 // يفهم "بعد X دقيقة" / "بعد X ساعة" / وقت مباشر "21:30"
@@ -52,6 +101,10 @@ function parseArabicSchedule(text) {
 }
 
 module.exports = {
+  buildSeasonSelectRow,
+  buildEpisodesEmbed,
+  getSeasonEpisodes,
+
   'فيلم': {
     permission: PermissionFlagsBits.SendMessages,
     label: 'السينما',
@@ -66,7 +119,7 @@ module.exports = {
       try {
         const movie = await searchTitle(query, 'movie');
         if (!movie) return message.reply({ embeds: [errorEmbed('ما لقيت شي', `ما لقيت فيلم بإسم "${query}"`)] });
-        await message.reply({ embeds: [buildTitleEmbed(movie, '🎬')] });
+        await message.reply({ embeds: [buildTitleEmbed(movie, '🎬')], components: [buildWatchButtonRow()] });
       } catch (err) {
         console.error('❌ خطأ بأمر فيلم:', err?.message || err);
         await message.reply({ embeds: [errorEmbed('صار خطأ', 'تعذر جلب معلومات الفيلم حالياً.')] });
@@ -88,7 +141,7 @@ module.exports = {
       try {
         const show = await searchTitle(query, 'tv');
         if (!show) return message.reply({ embeds: [errorEmbed('ما لقيت شي', `ما لقيت مسلسل بإسم "${query}"`)] });
-        await message.reply({ embeds: [buildTitleEmbed(show, '📺')] });
+        await message.reply({ embeds: [buildTitleEmbed(show, '📺')], components: [buildSeriesButtonsRow(show.id)] });
       } catch (err) {
         console.error('❌ خطأ بأمر مسلسل:', err?.message || err);
         await message.reply({ embeds: [errorEmbed('صار خطأ', 'تعذر جلب معلومات المسلسل حالياً.')] });
@@ -181,3 +234,4 @@ module.exports = {
     }
   }
 };
+ 
