@@ -42,8 +42,24 @@ async function searchTitle(query, type = 'movie') {
     releaseDate: best.release_date || best.first_air_date || null,
     genres: details?.genres?.map(g => g.name).join('، ') || null,
     runtime: details?.runtime || details?.episode_run_time?.[0] || null,
+    seasonCount: details?.number_of_seasons || null, // فقط للمسلسلات
     tmdbUrl: `https://www.themoviedb.org/${type}/${best.id}`
   };
 }
 
-module.exports = { isConfigured, searchTitle };
+// يجيب حلقات موسم معين من مسلسل
+async function getSeasonEpisodes(tvId, seasonNumber) {
+  const data = await tmdbFetch(`/tv/${tvId}/season/${seasonNumber}`);
+  return {
+    seasonName: data.name,
+    episodes: (data.episodes || []).map(ep => ({
+      number: ep.episode_number,
+      name: ep.name,
+      overview: ep.overview,
+      airDate: ep.air_date,
+      stillUrl: ep.still_path ? IMG_BASE + ep.still_path : null
+    }))
+  };
+}
+
+module.exports = { isConfigured, searchTitle, getSeasonEpisodes };
