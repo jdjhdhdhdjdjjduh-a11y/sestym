@@ -67,23 +67,23 @@ module.exports = {
         let res = null;
 
         if (isDirectUrl) {
-          // رابط مباشر (يوتيوب/سبوتيفاي/ساوند كلاود/ديزر) - ما نحتاج نجرب مصادر متعددة
+          // رابط مباشر (يوتيوب/سبوتيفاي/ساوند كلاود/ديزر) - يشتغل مباشر بدون تعقيد
           res = await player.search({ query }, message.author);
         } else {
-          // بحث بالاسم: نجرب أكثر من مصدر بالتسلسل لين نلقى نتيجة
-          // (يبدأ بساوند كلاود لأنه أكثر استقرارًا، وبعدين يوتيوب، وبعدين سبوتيفاي)
-          // دييزر أولاً لأن جودته الصوتية أعلى (320kbps) من يوتيوب وساوند كلاود عادةً
-          const platforms = ['dzsearch', 'scsearch', 'ytsearch', 'spsearch'];
-          for (const platform of platforms) {
+          // بحث بالاسم: مصدر واحد ثابت (ساوند كلاود) بدل تجربة عدة مصادر بالتسلسل
+          // (تجربة مصادر متعددة كانت تسبب تذبذب وأخطاء عشوائية بالتشغيل)
+          try {
+            res = await player.search({ query, source: 'scsearch' }, message.author);
+          } catch (searchErr) {
+            console.error('⚠️ فشل البحث عبر scsearch:', searchErr?.message || searchErr);
+          }
+
+          // لو ساوند كلاود ما لقى شي، نجرب يوتيوب كاحتياط وحيد
+          if (!res?.tracks?.length) {
             try {
-              const attempt = await player.search({ query, source: platform }, message.author);
-              if (attempt?.tracks?.length) {
-                res = attempt;
-                break;
-              }
+              res = await player.search({ query, source: 'ytsearch' }, message.author);
             } catch (searchErr) {
-              console.error(`⚠️ فشل البحث عبر ${platform}:`, searchErr?.message || searchErr);
-              // نكمل للمصدر التالي بدل ما نوقف كامل الأمر
+              console.error('⚠️ فشل البحث عبر ytsearch:', searchErr?.message || searchErr);
             }
           }
         }
