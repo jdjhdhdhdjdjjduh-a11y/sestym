@@ -27,21 +27,31 @@ function repeatModeLabel(mode) {
 function buildNowPlayingEmbed(player, track) {
   const requester = track.requester?.tag || track.requester?.username || 'غير معروف';
   const hasFilters = Object.values(player.filterManager?.filters || {}).some(v => v === true);
+  const nextTrack = player.queue.tracks[0];
 
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(COLORS.info)
-    .setAuthor({ name: '🎶 تشتغل الآن' })
-    .setTitle(track.info.title || 'مقطع بدون اسم')
+    .setAuthor({ name: '🎧  يشتغل الآن بالروم الصوتي' })
+    .setTitle(`🎵  ${track.info.title || 'مقطع بدون اسم'}`)
     .setURL(track.info.uri || null)
     .setThumbnail(track.info.artworkUrl || null)
-    .setDescription(progressBar(player.position, track.info.duration))
-    .addFields(
-      { name: '👤 طلبها', value: requester, inline: true },
-      { name: '🔊 الصوت', value: `${player.volume}%`, inline: true },
-      { name: '📃 بالطابور', value: `${player.queue.tracks.length} أغنية`, inline: true },
-      { name: 'وضع التكرار', value: repeatModeLabel(player.repeatMode), inline: true }
-    )
-    .setFooter({ text: `المصدر: ${track.info.sourceName || 'غير معروف'}${hasFilters ? ' • فلتر مفعّل' : ''}` });
+    .setDescription(
+      `**${track.info.author || 'فنان غير معروف'}**\n\n` +
+      progressBar(player.position, track.info.duration) +
+      `\n\n\`\`\`\n` +
+      `👤 طلبها      ${requester}\n` +
+      `🔊 الصوت      ${player.volume}%\n` +
+      `📃 بالطابور   ${player.queue.tracks.length} أغنية\n` +
+      `🔁 التكرار    ${repeatModeLabel(player.repeatMode).replace(/^[^\s]+\s/, '')}\n` +
+      `🎚️ المصدر    ${track.info.sourceName || 'غير معروف'}${hasFilters ? ' (فلتر مفعّل)' : ''}\n` +
+      `\`\`\``
+    );
+
+  if (nextTrack) {
+    embed.addFields({ name: '⏭️ التالي بالطابور', value: `${nextTrack.info.title}`, inline: false });
+  }
+
+  return embed.setFooter({ text: 'استخدم الأزرار تحت للتحكم بالتشغيل' });
 }
 
 function buildAddedEmbed(track, player) {
@@ -54,27 +64,27 @@ function buildAddedEmbed(track, player) {
 function buildRow1(player) {
   const paused = !!player?.paused;
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('music_previous').setEmoji('⏮️').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('music_playpause').setEmoji(paused ? '▶️' : '⏸️').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('music_skip').setEmoji('⏭️').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('music_stop').setEmoji('⏹️').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId('music_shuffle').setEmoji('🔀').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('music_previous').setEmoji('⏮️').setLabel('السابقة').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('music_playpause').setEmoji(paused ? '▶️' : '⏸️').setLabel(paused ? 'تشغيل' : 'إيقاف مؤقت').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId('music_skip').setEmoji('⏭️').setLabel('التالية').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('music_stop').setEmoji('⏹️').setLabel('إيقاف').setStyle(ButtonStyle.Danger)
   );
 }
 
 function buildRow2(player) {
   const modeEmoji = player?.repeatMode === 'queue' ? '🔁' : player?.repeatMode === 'track' ? '🔂' : '➡️';
   return new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('music_seek_back').setEmoji('⏪').setLabel('10ث').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('music_volume_down').setEmoji('🔉').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('music_loop').setEmoji(modeEmoji).setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('music_volume_up').setEmoji('🔊').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId('music_seek_forward').setEmoji('⏩').setLabel('10ث').setStyle(ButtonStyle.Secondary)
+    new ButtonBuilder().setCustomId('music_seek_back').setEmoji('⏪').setLabel('رجوع 10ث').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('music_volume_down').setEmoji('🔉').setLabel('خفض الصوت').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('music_loop').setEmoji(modeEmoji).setLabel('التكرار').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('music_volume_up').setEmoji('🔊').setLabel('رفع الصوت').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId('music_seek_forward').setEmoji('⏩').setLabel('تقديم 10ث').setStyle(ButtonStyle.Secondary)
   );
 }
 
 function buildRow3() {
   return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId('music_shuffle').setEmoji('🔀').setLabel('عشوائي').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId('music_queue').setEmoji('📃').setLabel('الطابور').setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId('music_restart').setEmoji('🔄').setLabel('من البداية').setStyle(ButtonStyle.Secondary)
   );
