@@ -21,6 +21,12 @@ module.exports = {
         return message.reply({ embeds: [errorEmbed('غير ممكن', 'يجب أن تكون متواجدًا في روم صوتي أولاً!')] });
       }
 
+      // لو فيه جلسة موسيقى شغالة (لافا لينك)، لازم نفكها أول عشان ما يصير تعارض
+      const musicPlayer = message.client.lavalink?.getPlayer(message.guild.id);
+      if (musicPlayer) {
+        await musicPlayer.destroy();
+      }
+
       try {
         const connection = joinVoiceChannel({
           channelId: voiceChannel.id,
@@ -140,3 +146,4 @@ module.exports = {
     }
   }
 };
+ 
