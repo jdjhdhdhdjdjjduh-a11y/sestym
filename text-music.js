@@ -17,6 +17,16 @@ function getPlayer(message) {
   return message.client.lavalink.getPlayer(message.guild.id);
 }
 
+// لو البوت داخل روم صوتي بأمر "دخول" (اتصال خام منفصل عن نظام الموسيقى)،
+// لازم نفكه أول قبل لا نشغل أغنية، وإلا يصير تعارض ويفشل التشغيل بصمت
+function releaseRawVoiceConnection(guildId) {
+  const { getVoiceConnection } = require('@discordjs/voice');
+  const rawConnection = getVoiceConnection(guildId);
+  if (rawConnection) {
+    rawConnection.destroy();
+  }
+}
+
 // يتأكد إن العضو بنفس الروم الصوتي مع البوت قبل ما يتحكم بالتشغيل
 function ensureSameVoice(message, player) {
   const userChannel = message.member?.voice?.channel;
@@ -61,7 +71,13 @@ module.exports = {
             volume: 100
           });
         }
-        if (!player.connected) await player.connect();
+        if (!player.connected) {
+          releaseRawVoiceConnection(message.guild.id);
+          await player.connect();
+          // أول اتصال بجلسة صوت جديدة على السيرفر العام يحتاج لحظة "تسخين"
+          // قبل ما يصير جاهز فعليًا للبحث والتشغيل بدون مشاكل
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
         const isDirectUrl = /^https?:\/\//i.test(query);
         let res = null;
@@ -75,7 +91,14 @@ module.exports = {
           try {
             res = await player.search({ query, source: 'scsearch' }, message.author);
           } catch (searchErr) {
-            console.error('⚠️ فشل البحث عبر scsearch:', searchErr?.message || searchErr);
+            console.error('⚠️ فشل البحث عبر scsearch (محاولة أولى):', searchErr?.message || searchErr);
+            // إعادة محاولة وحدة بعد لحظة بسيطة (يعالج تذبذب أول طلب بالسيرفر العام)
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            try {
+              res = await player.search({ query, source: 'scsearch' }, message.author);
+            } catch (retryErr) {
+              console.error('⚠️ فشل البحث عبر scsearch (محاولة ثانية):', retryErr?.message || retryErr);
+            }
           }
 
           // لو ساوند كلاود ما لقى شي، نجرب يوتيوب كاحتياط وحيد
@@ -308,9 +331,9 @@ module.exports = {
       const key = args[0];
       if (!key) {
         const active = [];
-        if (player.filterManager.equalizerBands.length) active.push('باص');
+        if (player.filterManager.equalizerBands.length) active.push('السادس');
         for (const [ar, en] of Object.entries(FILTER_MAP)) {
-          if (ar !== 'باص' && player.filterManager.filters?.[en]) active.push(ar);
+          if (ar !== 'السادس' && player.filterManager.filters?.[en]) active.push(ar);
         }
         return message.reply({ embeds: [infoEmbed('فلاتر الصوت', `**المفعّل حاليًا:** ${active.length ? active.join(', ') : 'ولا فلتر'}\n**المتاح:** ${Object.keys(FILTER_MAP).join(' / ')}\n**الصيغة:** \`فلتر باص\` (يفعّل/يوقف) أو \`فلتر مسطح\` (يمسح الكل)`)] });
       }
@@ -326,15 +349,15 @@ module.exports = {
 
       try {
         switch (key) {
-          case 'باص':
+          case 'السادس':
             if (player.filterManager.equalizerBands.length) await player.filterManager.clearEQ();
             else await player.filterManager.setEQPreset('BassboostHigh');
             break;
-          case 'نايت_كور': await player.filterManager.toggleNightcore(); break;
-          case 'فيبورويف': await player.filterManager.toggleVaporwave(); break;
-          case 'دوران': await player.filterManager.toggleRotation(); break;
-          case 'رعشة': await player.filterManager.toggleTremolo(); break;
-          case 'كاريوكي': await player.filterManager.toggleKaraoke(); break;
+          case 'الاول': await player.filterManager.toggleNightcore(); break;
+          case 'الثاني': await player.filterManager.toggleVaporwave(); break;
+          case 'الثالث': await player.filterManager.toggleRotation(); break;
+          case 'الرابع': await player.filterManager.toggleTremolo(); break;
+          case 'الخامس': await player.filterManager.toggleKaraoke(); break;
         }
         await message.reply({ embeds: [successEmbed('تم التحديث', `🎚️ فلتر **${key}** اتبدل. (ملاحظة: أي فلتر يحتاج إعادة ترميز بسيطة، عادي هذا)`)] });
       } catch (err) {
