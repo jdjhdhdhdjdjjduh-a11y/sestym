@@ -38,37 +38,48 @@ const BLOCKED_HOSTS = ['lava-v4.ajieblogs.eu.org'];
 async function fetchPublicNodes() {
   const sources = [
     'https://raw.githubusercontent.com/AjieDev/lavalink-list/master/nodes.json',
-    'https://raw.githubusercontent.com/DarrenOfficial/lavalink-list/master/nodes.json'
+    'https://raw.githubusercontent.com/botxlab/lavalink-list/main/nodes.json',
+    'https://raw.githubusercontent.com/botxlab/lavalink-list/master/nodes.json',
+    'https://raw.githubusercontent.com/stackryze/lavalink-list/main/nodes.json',
+    'https://raw.githubusercontent.com/bongodevs/lavalink-list/main/nodes.json',
+    'https://raw.githubusercontent.com/alfari24/lavalink-lists/main/nodes.json',
+    'https://raw.githubusercontent.com/nhutlamm/lavalink-list/main/nodes.json'
   ];
 
-  for (const url of sources) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (!Array.isArray(data) || !data.length) continue;
+  const results = await Promise.allSettled(sources.map(async (url) => {
+    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) throw new Error('قائمة فاضية');
+    return { url, data };
+  }));
 
-      const nodes = data
-        .filter(n => n.host && !BLOCKED_HOSTS.includes(n.host))
-        .map(n => ({
-          id: String(n['unique-id'] || n.identifier || n.host).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-          host: n.host,
-          port: n.port || 2333,
-          authorization: n.password || 'youshallnotpass',
-          secure: !!n.secure,
-          retryAmount: 2,      // لا نعيد المحاولة أكثر من مرتين على نود ميت (نودات عامة كثيرة)
-          retryDelay: 5000
-        }));
+  const allNodes = [];
+  const seenHosts = new Set();
 
-      if (nodes.length) {
-        console.log(`✅ جلب ${nodes.length} نود لافا لينك حيّ من: ${url}`);
-        return nodes;
-      }
-    } catch (err) {
-      console.warn(`⚠️ تعذر جلب قائمة نودات لافا لينك من ${url}:`, err?.message || err);
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue;
+    const { url, data } = result.value;
+
+    let addedFromThisSource = 0;
+    for (const n of data) {
+      if (!n.host || seenHosts.has(n.host) || BLOCKED_HOSTS.includes(n.host)) continue;
+      seenHosts.add(n.host);
+      allNodes.push({
+        id: String(n['unique-id'] || n.identifier || n.host).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        host: n.host,
+        port: n.port || 2333,
+        authorization: n.password || 'youshallnotpass',
+        secure: !!n.secure,
+        retryAmount: 2,
+        retryDelay: 5000
+      });
+      addedFromThisSource++;
     }
+    console.log(`✅ جلب ${addedFromThisSource} نود جديد من: ${url}`);
   }
-  return null;
+
+  return allNodes.length ? allNodes : null;
 }
 
 // ------- تشغيل نظام الموسيقى (يُستدعى مرة وحدة من index.js وقت ما ينعمل الـ client) -------
@@ -93,7 +104,7 @@ async function initMusic(discordClient) {
     console.warn('⚠️ ولا نود اجتاز الفحص، رح نستخدم القائمة كاملة كحل أخير (مع شبكة الأمان)');
   }
 
-  nodes = nodes.slice(0, 10); // حد أقصى معقول لعدد النودات المتصلة بنفس الوقت
+  nodes = nodes.slice(0, 15); // حد أقصى معقول لعدد النودات المتصلة بنفس الوقت (رفعناه لأن المصادر صارت أكثر)
 
   client.lavalink = new LavalinkManager({
     nodes,
