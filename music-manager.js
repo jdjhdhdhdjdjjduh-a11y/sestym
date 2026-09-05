@@ -17,7 +17,7 @@ const FALLBACK_NODES = [
 // إنه معطوب بعد ما مكتبة لافا لينك تحاول تستخدمه وتكراش (زي "does not provide /v4/info") -------
 async function validateNode(node) {
   const protocol = node.secure ? 'https' : 'http';
-  const url = `${protocol}://${node.host}:${node.port}/version`;
+  const url = `${protocol}://${node.host}:${node.port}/v4/info`;
 
   try {
     const res = await fetch(url, {
@@ -25,12 +25,15 @@ async function validateNode(node) {
       signal: AbortSignal.timeout(4000)
     });
     if (!res.ok) return false;
-    const text = await res.text();
-    return !!text && text.length < 100; // نص نسخة قصير طبيعي، مو صفحة خطأ HTML طويلة
+    const data = await res.json();
+    return !!data?.version; // /v4/info الحقيقي يرجع كائن فيه version دائمًا
   } catch {
     return false;
   }
 }
+
+// نودات معروف عنها مشاكل متكررة (رغم إنها تظهر بالقائمة) - نستبعدها دايمًا احتياطًا
+const BLOCKED_HOSTS = ['lava-v4.ajieblogs.eu.org'];
 
 async function fetchPublicNodes() {
   const sources = [
@@ -46,7 +49,7 @@ async function fetchPublicNodes() {
       if (!Array.isArray(data) || !data.length) continue;
 
       const nodes = data
-        .filter(n => n.host)
+        .filter(n => n.host && !BLOCKED_HOSTS.includes(n.host))
         .map(n => ({
           id: String(n['unique-id'] || n.identifier || n.host).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
           host: n.host,
