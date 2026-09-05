@@ -33,7 +33,9 @@ async function fetchPublicNodes() {
           host: n.host,
           port: n.port || 2333,
           authorization: n.password || 'youshallnotpass',
-          secure: !!n.secure
+          secure: !!n.secure,
+          retryAmount: 2,      // لا نعيد المحاولة أكثر من مرتين على نود ميت (نودات عامة كثيرة)
+          retryDelay: 5000
         }));
 
       if (nodes.length) {
@@ -148,4 +150,3 @@ function getLavalink() {
 }
 
 module.exports = { initMusic, connectMusic, getLavalink };
- 
