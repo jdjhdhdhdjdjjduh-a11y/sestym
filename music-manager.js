@@ -13,6 +13,25 @@ const FALLBACK_NODES = [
 // ------- جلب قائمة نودات لافا لينك العامة "حيّة" من مصدر مجتمعي يتحدث باستمرار -------
 // هذا يحل مشكلة "النودات تطيح بعد فترة" لأننا ما عاد نعتمد على قائمة ثابتة بالكود
 // تصير قديمة، وبدلها نجيب أحدث قائمة موجودة وقت ما البوت يشتغل فعليًا
+// ------- فحص مسبق لكل نود: نتأكد يرد صح فعليًا قبل ما نضيفه، بدل ما نكتشف
+// إنه معطوب بعد ما مكتبة لافا لينك تحاول تستخدمه وتكراش (زي "does not provide /v4/info") -------
+async function validateNode(node) {
+  const protocol = node.secure ? 'https' : 'http';
+  const url = `${protocol}://${node.host}:${node.port}/version`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: node.authorization },
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) return false;
+    const text = await res.text();
+    return !!text && text.length < 100; // نص نسخة قصير طبيعي، مو صفحة خطأ HTML طويلة
+  } catch {
+    return false;
+  }
+}
+
 async function fetchPublicNodes() {
   const sources = [
     'https://raw.githubusercontent.com/AjieDev/lavalink-list/master/nodes.json',
@@ -58,6 +77,19 @@ async function initMusic(discordClient) {
     console.warn('⚠️ تعذر الجلب الديناميكي، استخدام القائمة الاحتياطية الثابتة');
     nodes = FALLBACK_NODES;
   }
+
+  // فحص كل نود فعليًا قبل الاعتماد عليه (يشتغل بالتوازي، أقصى 4 ثواني لكل واحد)
+  console.log(`🔍 جاري فحص ${nodes.length} نود قبل الاعتماد عليهم...`);
+  const checks = await Promise.allSettled(nodes.map(n => validateNode(n)));
+  const validNodes = nodes.filter((_, i) => checks[i].status === 'fulfilled' && checks[i].value === true);
+
+  if (validNodes.length) {
+    console.log(`✅ ${validNodes.length} من ${nodes.length} نود اجتازوا الفحص واعتمدناهم`);
+    nodes = validNodes;
+  } else {
+    console.warn('⚠️ ولا نود اجتاز الفحص، رح نستخدم القائمة كاملة كحل أخير (مع شبكة الأمان)');
+  }
+
   nodes = nodes.slice(0, 10); // حد أقصى معقول لعدد النودات المتصلة بنفس الوقت
 
   client.lavalink = new LavalinkManager({
@@ -150,3 +182,4 @@ function getLavalink() {
 }
 
 module.exports = { initMusic, connectMusic, getLavalink };
+ 
