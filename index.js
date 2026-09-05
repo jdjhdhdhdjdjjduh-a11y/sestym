@@ -1,4 +1,14 @@
 require('dotenv').config();
+
+// ------- شبكة أمان عامة: تمنع أي خطأ غير متوقع (خصوصًا من نودات لافا لينك العامة
+// غير الموثوقة اللي نجيبها ديناميكيًا) من إسقاط العملية بالكامل بصمت -------
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ خطأ غير ممسوك (Promise):', reason?.message || reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ خطأ غير ممسوك (Exception):', err?.message || err);
+});
+
 const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const db = require('./db');
 const { setClient } = require('./bot-status');
