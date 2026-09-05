@@ -21,7 +21,7 @@ const client = new Client({
 });
 
 setClient(client); // عشان الموقع يقدر يتأكد من حالة اتصال البوت
-initMusic(client); // تهيئة نظام الموسيقى (لافا لينك) - الاتصال الفعلي يصير بعد ready بملف event-ready.js
+const musicReady = initMusic(client); // تهيئة نظام الموسيقى (لافا لينك) - يجيب قائمة النودات الحيّة أول
 
 // ------- الأوامر (Slash Commands) -------
 client.commands = new Collection();
@@ -54,7 +54,9 @@ db.initTables()
   .then(() => console.log('✅ تم الاتصال بقاعدة البيانات (PostgreSQL)'))
   .catch(err => console.error('❌ فشل الاتصال بقاعدة البيانات:', err));
 
-client.login(process.env.DISCORD_TOKEN);
+musicReady
+  .catch(err => console.error('❌ فشل تهيئة نظام الموسيقى:', err?.message || err))
+  .finally(() => client.login(process.env.DISCORD_TOKEN));
 
 // ------- تشغيل الموقع (لوحة التحكم) بنفس العملية -------
 // server.js يحتوي كل كود express ويبدأ الاستماع على المنفذ لوحده وقت ما ينعمل require له
